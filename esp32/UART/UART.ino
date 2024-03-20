@@ -13,7 +13,7 @@ void printData(byte data[WORD_SIZE], int len);
 byte servoBits[WORD_SIZE]; // store the 6 bytes of data from pc
 int target[WORD_SIZE]; // store the 6 bytes of data from pc
 Servo servos[NUMSERVOS]; // arays of servo objects
-int pinNums[NUMSERVOS] = {2,4,6,8,10,12}; // declares the pins for the servos 
+int pinNums[NUMSERVOS] = {2,22,4,10,18,21}; // declares the pins for the servos 
 
 
 
@@ -42,27 +42,37 @@ void loop()
  
     for(int i = 0; i < NUMSERVOS; i++)
     {
+      
       if(bitRead(servoBits[i], 7) == 0 )
       {
         target[i] = (servoBits[i] & 0b01111111) + 90;
-        servos[i].write((servoBits[i] & 0b01111111) + 90);
+
+        if(i == 1)
+          servos[i].write(180 - ((servoBits[i] & 0b01111111) + 90));
+        else
+          servos[i].write((servoBits[i] & 0b01111111) + 90);
+
+        
 
       }
       else if (bitRead(servoBits[i], 7) == 1)
       {
         target[i] = ((servoBits[i] & 0b01111111) * -1) + 90;
-        servos[i].write(((servoBits[i] & 0b01111111) * -1) + 90);
+        if(i == 1)
+          servos[i].write(180 - (((servoBits[i] & 0b01111111) * -1) + 90));
+
+        else
+          servos[i].write(((servoBits[i] & 0b01111111) * -1) + 90);
+
       }
     }
-    // for(int i = 0; i < NUMSERVOS; i++)
-    // {
-    //   if(servos[i].read() != target) // add target array
 
-    // }
-    while(!checkAllEqual(target))
-    {
+    //delay(2000);
+
+    // while(!checkAllEqual(target))
+    // {
       
-    }
+    // }
 
     //Serial.println("finshed ");
   }
@@ -88,9 +98,6 @@ bool checkAllEqual(int target[])
 
       Serial.println(difference);
 
-
-
-      
 
       return false; // Return false if any element is not equal to the desired value
     }
