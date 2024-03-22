@@ -1,19 +1,19 @@
 #include <ESP32Servo.h>
 
 #define SERIAL_BAUDRATE 115200
-#define WORD_SIZE 6   // word length 
+#define WORD_SIZE 3   // word length 
 #define LINEFEED 10   // "enter" ascii
-#define NUMSERVOS 6   // totla servos used
+#define NUMSERVOS 4   // totla servos used
 #define STARTUP 90   // starting position 
 
 // functions declartions 
 void printData(byte data[WORD_SIZE], int len);
 
 
-byte servoBits[WORD_SIZE]; // store the 6 bytes of data from pc
-int target[WORD_SIZE]; // store the 6 bytes of data from pc
+byte servoBits[WORD_SIZE]; // store the 3 bytes of data from pc
+int target[NUMSERVOS]; // store the 3 bytes of data from pc
 Servo servos[NUMSERVOS]; // arays of servo objects
-int pinNums[NUMSERVOS] = {2,22,4,10,18,21}; // declares the pins for the servos 
+int pinNums[NUMSERVOS] = {14,35,25,19}; // declares the pins for the servos 
 
 
 
@@ -37,55 +37,121 @@ void loop()
 {
   if (Serial.available()) 
   {
-
     int BytesRead = Serial.readBytes(servoBits, WORD_SIZE);
- 
-    for(int i = 0; i < NUMSERVOS; i++)
+    int index = 0;
+
+    for(int i = 0; i < WORD_SIZE; i++)
     {
       
       if(bitRead(servoBits[i], 7) == 0 )
       {
-        target[i] = (servoBits[i] & 0b01111111) + 90;
+        if(index == 0)
+        {
+          target[index++] = (servoBits[i] & 0b01111111) + 90;
 
-        if(i == 1)
-          servos[i].write(180 - ((servoBits[i] & 0b01111111) + 90));
+          target[index++] = 180 - ((servoBits[i] & 0b01111111) + 90);
+        }
         else
-          servos[i].write((servoBits[i] & 0b01111111) + 90);
-
+          target[index++] = (servoBits[i] & 0b01111111) + 90;
         
-
       }
       else if (bitRead(servoBits[i], 7) == 1)
       {
-        target[i] = ((servoBits[i] & 0b01111111) * -1) + 90;
-        if(i == 1)
-          servos[i].write(180 - (((servoBits[i] & 0b01111111) * -1) + 90));
-
+        if(index == 0)
+        {
+          target[index++] = (((servoBits[i] & 0b01111111) * -1) + 90);
+          
+          target[index++] = 180 - (((servoBits[i] & 0b01111111) * -1) + 90);
+        }
         else
-          servos[i].write(((servoBits[i] & 0b01111111) * -1) + 90);
-
+          target[index++] = (((servoBits[i] & 0b01111111) * -1) + 90);
+        
       }
+      //servos[i].write(target[i]);
     }
 
     //delay(2000);
-
-    // while(!checkAllEqual(target))
-    // {
-      
-    // }
-
-    //Serial.println("finshed ");
   }
 
 }
 
-bool checkAllEqual(int target[])
+void moveInc()
+{
+    while(!checkAllEqual())
+    {
+      int max = getMaxDistance();
+      // if(max <= 10)
+      // {
+      //   servos[i].write(target[i]);
+      //   continue;
+      // }
+
+      // if(max == 0)
+      //   break;
+      for(int i = 0; i < NUMSERVOS; i++)
+      {
+        int distance = getDistance(i);
+        int move = 0;
+
+        if(distance <= 10 )
+        {
+          servos[i].write(target[i]);
+          continue;
+        }
+
+        
+          
+
+        move = (double)(distance / max) * distance;
+        int current = servos[i].read();
+
+        if(current > target[i])
+          servos[i].write(current - move);
+        else if(current < target[i])
+          servos[i].write(current + move);
+
+        //delay(200);
+      }
+    }
+}
+int getDistance(int servoIndex)
+{
+  int rawValue = servos[servoIndex].read() - target[servoIndex];
+
+  int value = abs(rawValue);
+
+  // check if angle read is accurate
+  // if (value <= 3)
+  //   return 0;
+
+  return value;
+}
+int getMaxDistance()
+{
+  int maxValue = 0;
+  
+  for (int i = 0; i < NUMSERVOS; i++)
+  {
+    int value = servos[i].read() - target[i];
+    value = abs(value);
+
+    if(value > maxValue)
+      maxValue = value;
+
+  }
+  // check if angle read is accurate
+  // if(maxValue <= 3)
+  //   return 0;
+
+  return maxValue;
+}
+bool checkAllEqual()
 {
   for (int i = 0; i < NUMSERVOS; i++) 
   {
     int difference = servos[i].read() - target[i];
     
-    if (abs(servos[i].read() - target[i]) >= 3) 
+    if (abs(difference) > 3) 
     {
       Serial.println("this is what is reading: ");
 
@@ -106,7 +172,6 @@ bool checkAllEqual(int target[])
   Serial.println("finshed ");
   return true;
 }
-
 void printData(byte data[WORD_SIZE], int len)
 {
     // Display the received byte
