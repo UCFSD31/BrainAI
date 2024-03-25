@@ -2,13 +2,12 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import math
-import os
+import serial
+import send_bytes
+import time
 
-# Enable specific CPU instructions
-os.environ['TF_ENABLE_SSE'] = '1'   # SSE4.1 and SSE4.2
-os.environ['TF_ENABLE_AVX'] = '1'   # AVX
-os.environ['TF_ENABLE_AVX2'] = '1'  # AVX2
-os.environ['TF_ENABLE_FMA'] = '1'   # FMA
+
+ser = serial.Serial('/dev/ttyUSB0', 115200)
 
 # Initialize MediaPipe Hands.
 mp_hands = mp.solutions.hands
@@ -47,8 +46,14 @@ def calculate_angle_not_right(x1, y1, x2, y2, x3, y3):
 
 # For webcam input, initialize the camera.
 cap = cv2.VideoCapture(0)
-
+angle_m = 0
+angle_thumb = 0
+angle_index = 0
+last_send_time = time.time()
 while cap.isOpened():
+    
+    
+
     success, image = cap.read()
     if not success:
         continue
@@ -89,37 +94,54 @@ while cap.isOpened():
             index_knuckle_pos = (int(index_knuckle.x * width), int(index_knuckle.y * height))
             pinky_knuckle_pos = (int(pinky_knuckle.x * width), int(pinky_knuckle.y * height))
 
-            angle_m = calculate_angle(mcp_position[0], mcp_position[1], pip_position[0], pip_position[1])
-            angle_thumb = calculate_angle_not_right(wrist_position[0], wrist_position[1], thumb_knuckle_position[0], 
-                                                    thumb_knuckle_position[1], thumb_tip_position[0], thumb_tip_position[1])
-            angle_index = calculate_angle_not_right(pinky_knuckle_pos[0], pinky_knuckle_pos[1], mcp_position[0], mcp_position[1],
-                                                    index_tip_pos[0], index_tip_pos[1])
-            
+            current_time = time.time()
 
-            if(angle_m < 0 and mcp_position[0] - pip_position[0] > 0):
-                angle_m = 0
-            if(angle_m < 0 and mcp_position[0] - pip_position[0] < 0):
-                angle_m += 180
-            elif(angle_m >= 0 and mcp_position[0] - pip_position[0] <= 0):
-                angle_m = 180
-            if(angle_m == -90):
-                angle_m = 90
-            if(angle_m == -0):
-                angle_m = 0
-            
-            angle_thumb = min(180, max(0, ((angle_thumb - 130) * 4.6)))
-            angle_index = min(180, max(0, ((angle_index - 30) * 4.7)))
-            
+
+
+            if(current_time - last_send_time >= 0.2):
+                angle_m = calculate_angle(mcp_position[0], mcp_position[1], pip_position[0], pip_position[1])
+                angle_thumb = calculate_angle_not_right(wrist_position[0], wrist_position[1], thumb_knuckle_position[0], 
+                                                        thumb_knuckle_position[1], thumb_tip_position[0], thumb_tip_position[1])
+                angle_index = calculate_angle_not_right(pinky_knuckle_pos[0], pinky_knuckle_pos[1], mcp_position[0], mcp_position[1],
+                                                        index_tip_pos[0], index_tip_pos[1])
+                
+
+                if(angle_m < 0 and mcp_position[0] - pip_position[0] > 0):
+                    angle_m = 0
+                if(angle_m < 0 and mcp_position[0] - pip_position[0] < 0):
+                    angle_m += 180
+                elif(angle_m >= 0 and mcp_position[0] - pip_position[0] <= 0):
+                    angle_m = 180
+                if(angle_m == -90):
+                    angle_m = 90
+                if(angle_m == -0):
+                    angle_m = 0
+                
+                angle_thumb = min(145, max(0, ((angle_thumb - 130) * 4.6)))
+                angle_index = min(180, max(0, ((angle_index - 30) * 4.7)))
+
+                
+                if ser.in_waiting > 0:
+                    print("Reading")
+                    data = ser.read(3)
+                    print("ESP DATA:", data.decode().strip())  # Decode the bytes to string and strip newline characters
+                send_bytes.sendAngles(angle_thumb, angle_m, angle_index, ser)
+
+                
+
+                    
+
+                last_send_time = time.time()
 
             text_position = (10, 40)
             line_height = 40
             cv2.putText(image, f"Angle Middle: {angle_m:.2f}", text_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
             text_position = (text_position[0], text_position[1] + line_height)
-            cv2.putText(image, f"Angle Wrist: {angle_thumb:.2f}", text_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.putText(image, f"Angle Thumb: {angle_thumb:.2f}", text_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
             text_position = (text_position[0], text_position[1] + line_height)
             cv2.putText(image, f"Angle Index: {angle_index:.2f}", text_position, cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2, cv2.LINE_AA)
 
-
+    
 
     # Display the image.
     cv2.imshow('MediaPipe Hands', image)
@@ -128,5 +150,6 @@ while cap.isOpened():
     if cv2.waitKey(5) & 0xFF == ord('q'):
         break
 
+ser.close()
 cap.release()
 cv2.destroyAllWindows()

@@ -2,10 +2,13 @@ import serial
 import time
 import serial.tools.list_ports
 
-def sendAngles(angle1, angle2, angle3):
-    angle1 = angle1 - 90
-    angle2 = angle2 - 90
-    angle3 = angle3 - 90
+def sendAngles(angle1, angle2, angle3, ser):
+
+
+
+    angle1 = int(angle1) - 90
+    angle2 = int(angle2) - 90
+    angle3 = int(angle3) - 90
 
     sign_bit_1 = '1' if angle1 < 0 else '0'
     sign_bit_2 = '1' if angle2 < 0 else '0'
@@ -27,9 +30,9 @@ def sendAngles(angle1, angle2, angle3):
                          int(sign_bit_3 + angle_bits_3, 2)])
     
 
-    print(binary_data)
+    print("Data Computer:", binary_data)
 
-    ser = serial.Serial('/dev/ttyUSB0', 115200)
+    #ser = serial.Serial('/dev/ttyUSB0', 115200)
 
     ser.write(binary_data)
 
@@ -58,9 +61,6 @@ def sendAngles(angle1, angle2, angle3):
 # # Close the serial port when done (uncomment if needed)
 # # ser.close()
 
-sendAngles(90, 40, 177)
-
-serial_ports = serial.tools.list_ports.comports()
 
 # Print information about each serial port
 
