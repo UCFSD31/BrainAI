@@ -2,10 +2,15 @@ import serial
 import time
 import serial.tools.list_ports
 
-def sendAngles(angle1, angle2, angle3, ser):
+angle1 = 0
+angle2 = 0
+angle3 = 0
 
+direction_one = 0
+direction_two = 0
+direction_three = 0
 
-
+def sendCompVision(angle1, angle2, angle3, ser):
     angle1 = int(angle1) - 90
     angle2 = int(angle2) - 90
     angle3 = int(angle3) - 90
@@ -32,35 +37,7 @@ def sendAngles(angle1, angle2, angle3, ser):
 
     print("Data Computer:", binary_data)
 
-    #ser = serial.Serial('/dev/ttyUSB0', 115200)
-
     ser.write(binary_data)
 
-# # Open the serial port (change the port and baudrate as per your ESP32 configuration)
-# ser = serial.Serial('/dev/ttyUSB0', 115200)
-
-
-# binary_data2 = bytes([0b11011010, 0b11011010])
-
-# ser.write(binary_data)
-
-
-# # Main loop to continuously read data from serial and display it
-# while True:
-#     # Read a line of data from the serial port
-#     if ser.in_waiting > 0:
-
-#         data = ser.readline()
-
-#         print(data.decode().strip())  # Decode the bytes to string and strip newline characters
-#     else:
-
-#         ser.write(binary_data)
-
-#     time.sleep(0.1)
-# # Close the serial port when done (uncomment if needed)
-# # ser.close()
-
-
-# Print information about each serial port
-
+def sendLlama(bytes):
+    ser.write(bytes)
