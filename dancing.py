@@ -11,7 +11,7 @@ seconds = 30  # how long this script should run
 bufferSize = 512
 windowSizeMultiple = 2  # or 4 for higher accuracy, but more computational cost
 
-audioInputDeviceIndex = 1  # use 'arecord -l' to check available audio devices
+audioInputDeviceIndex = 0  # use 'arecord -l' to check available audio devices
 audioInputChannels = 1
 
 # Create and start the input stream
