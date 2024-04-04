@@ -1,48 +1,54 @@
-import pyaudio
 import numpy as np
-from aubio import tempo, source, float_type
-import aubio
+import pyaudio
+import queue
+import soundfile as sf
 
-# PyAudio configuration
+# Constants
 FORMAT = pyaudio.paFloat32
 CHANNELS = 1
-RATE = 44100
-CHUNK = 1024  # Size of each audio chunk
+RATE = 48000  # Sample rate
+CHUNK = 1024  # Buffer size
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
 
-# Function to process audio chunks with Aubio
-def process_audio_chunk(in_data, frame_count, time_info, status):
-    samples = np.frombuffer(in_data, dtype=aubio.float_type).reshape((-1, CHANNELS))
-    beat = o(samples)
-    if beat[0] != 0:
-        # A beat was detected, do something here
-        print("Beat detected!")
+# Queue to hold audio data
+audio_queue = queue.Queue()
+
+def callback(in_data, frame_count, time_info, status):
+    audio_queue.put(in_data)
     return (in_data, pyaudio.paContinue)
 
-# Setup Aubio's tempo detection
-o = tempo("default", CHUNK, CHANNELS, RATE)
-
-# Open stream using PyAudio
-stream = p.open(format=pyaudio.get_format_from_width(p.get_sample_size(FORMAT)),
+stream = p.open(format=FORMAT,
                 channels=CHANNELS,
                 rate=RATE,
                 input=True,
                 frames_per_buffer=CHUNK,
-                stream_callback=process_audio_chunk)
+                stream_callback=callback)
 
 # Start the stream
 stream.start_stream()
 
-# Keep the stream open and processing audio until you decide to stop
-try:
-    while stream.is_active():
-        # You could do additional processing here
-        pass
-except KeyboardInterrupt:
-    # Stop and close the stream and PyAudio
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-    print("Stream stopped")
+# Capture audio for a few seconds
+import time
+print("Capturing audio for analysis...")
+time.sleep(10)  # Adjust this for how long you want to capture audio
+
+# Stop stream
+stream.stop_stream()
+stream.close()
+p.terminate()
+
+# Process audio data
+audio_data = b''.join(list(audio_queue.queue))
+audio_signal = np.frombuffer(audio_data, dtype=np.float32)
+
+# Beat detection (optional, remove if not needed)
+# import librosa
+# tempo, beats = librosa.beat.beat_track(y=audio_signal, sr=RATE)
+# print(f"Estimated tempo: {tempo} beats per minute.")
+
+# Save the audio signal to a file
+filename = "captured_audio.wav"
+sf.write(filename, audio_signal, RATE)
+print(f"Audio saved to {filename}")
