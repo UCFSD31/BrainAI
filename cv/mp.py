@@ -125,7 +125,9 @@ while cap.isOpened():
                     print("Reading")
                     data = ser.read(3)
                     print("ESP DATA:", data.decode().strip())  # Decode the bytes to string and strip newline characters
-                send_bytes.sendAngles(angle_thumb, angle_m, angle_index, ser)
+                
+                angles = [angle_thumb, angle_m, angle_index]
+                send_bytes.sendAngles(angles)
 
                 
 

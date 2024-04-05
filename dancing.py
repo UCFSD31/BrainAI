@@ -1,64 +1,51 @@
-#!/usr/bin/python
-
 import pyaudio
 import aubio
 import numpy as np
-import wave
 from time import sleep
+import send_bytes  # Assuming this module has a function `send_data` to send the moves
 
-seconds = 30  # how long this script should run
+dance_move_1 = [[0, 90, 0], [0, -90, 0]]
 
+seconds = 10
 bufferSize = 512
-windowSizeMultiple = 2  # or 4 for higher accuracy, but more computational cost
-
-audioInputDeviceIndex = 0  # use 'arecord -l' to check available audio devices
+windowSizeMultiple = 2
+audioInputDeviceIndex = 0
 audioInputChannels = 1
+hopSize = bufferSize
+winSize = hopSize * windowSizeMultiple
 
-# Create and start the input stream
 pa = pyaudio.PyAudio()
 audioInputDevice = pa.get_device_info_by_index(audioInputDeviceIndex)
 audioInputSampleRate = int(audioInputDevice['defaultSampleRate'])
-
-# Create the aubio tempo detection:
-hopSize = bufferSize
-winSize = hopSize * windowSizeMultiple
 tempoDetection = aubio.tempo('default', winSize, hopSize, audioInputSampleRate)
 
-# Open a WAV file for writing
-wavOutputFilename = 'output.wav'
-wavFile = wave.open(wavOutputFilename, 'wb')
-wavFile.setnchannels(audioInputChannels)
-wavFile.setsampwidth(pa.get_sample_size(pyaudio.paFloat32))
-wavFile.setframerate(audioInputSampleRate)
+current_move = 0
+half_time_skip = 0
 
-# This function gets called by the input stream, as soon as enough samples are collected from the audio input:
 def readAudioFrames(in_data, frame_count, time_info, status):
+    global current_move
+    global half_time_skip
     signal = np.frombuffer(in_data, dtype=np.float32)
-
-    beat = tempoDetection(signal)
-    if np.sum(beat) > 0:  # Check if any beat was detected
+    beat = tempoDetection(signal)       
+    if np.sum(beat) > 0:
         bpm = tempoDetection.get_bpm()
         print("beat! (running with "+str(bpm)+" bpm)")
-
-    # Write audio frames to WAV file
-    wavFile.writeframes(in_data)
+        #send_bytes.sendAngles(dance_move_1[current_move])
+        current_move = 1 - current_move
 
     return (in_data, pyaudio.paContinue)
 
-# Configure the input stream
-inputStream = pa.open(format=pyaudio.paFloat32,
-                      input=True,
-                      channels=audioInputChannels,
-                      input_device_index=audioInputDeviceIndex,
-                      frames_per_buffer=bufferSize,
-                      rate=audioInputSampleRate,
-                      stream_callback=readAudioFrames)
+def dance():
+    inputStream = pa.open(format=pyaudio.paFloat32,
+                          input=True,
+                          channels=audioInputChannels,
+                          input_device_index=audioInputDeviceIndex,
+                          frames_per_buffer=bufferSize,
+                          rate=audioInputSampleRate,
+                          stream_callback=readAudioFrames)
 
-# Because the input stream runs asynchronously, we just wait for a few seconds here before stopping the script:
-sleep(seconds)
+    sleep(seconds)
 
-# Clean up
-inputStream.stop_stream()
-inputStream.close()
-pa.terminate()
-wavFile.close()
+    inputStream.stop_stream()
+    inputStream.close()
+    pa.terminate()
