@@ -3,6 +3,8 @@ import torchvision.models as models
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import time
+from torchvision.datasets import ImageFolder
+from torchvision import datasets
 
 # Function to select device
 def select_device():
@@ -26,7 +28,11 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
-val_dataset = datasets.ImageNet(root='./data', split='val', download=True, transform=transform)
+
+# val_dataset = datasets.ImageNet(root='./data', split='val', download=True, transform=transform)
+#val_dataset = datasets.ImageNet(root='/home/lei-wei/benchmarking/imagenet', split='val', download=True, transform=transform)
+val_dataset = datasets.ImageNet(root='/home/lei-wei/benchmarking/imagenet', transform=transform)
+
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
 # Warm-up GPU
