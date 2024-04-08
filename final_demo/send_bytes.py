@@ -28,6 +28,10 @@ def sendAngles(angles):
 
     print("Data Computer:", binary_data)
 
+    if serial_connection.in_waiting > 0:
+        print("Reading")
+        data = serial_connection.read(3)
+    print("ESP DATA:", data.decode().strip())
     serial_connection.write(binary_data)
 
 def set_serial_device(new_serial_connection):
