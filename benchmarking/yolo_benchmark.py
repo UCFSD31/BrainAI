@@ -24,7 +24,7 @@ transform = transforms.Compose([
 ])
 
 # add dataset where 'test_dataset_path' is
-test_dataset = datasets.ImageFolder(root='test_dataset_path', transform=transform)
+test_dataset = datasets.ImageFolder(root='/home/lei-wei/benchmarking/imagenet/', transform=transform)
 test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 # Benchmarking and evaluation

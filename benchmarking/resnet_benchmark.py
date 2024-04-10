@@ -17,7 +17,7 @@ def select_device():
 device = select_device()
 
 # Load the ResNet v2 101 model
-model = models.resnet101(pretrained=True)
+model = models.resnet101(weights=True)
 model = model.to(device)  # Move model to selected device
 model.eval()  # Set model to evaluation mode
 
@@ -31,7 +31,7 @@ transform = transforms.Compose([
 
 # val_dataset = datasets.ImageNet(root='./data', split='val', download=True, transform=transform)
 #val_dataset = datasets.ImageNet(root='/home/lei-wei/benchmarking/imagenet', split='val', download=True, transform=transform)
-val_dataset = datasets.ImageNet(root='/home/lei-wei/benchmarking/imagenet', transform=transform)
+val_dataset = datasets.ImageNet(root='/home/lei-wei/benchmarking/imagenet/', split='val', transform=transform)
 
 val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=32, shuffle=False)
 
@@ -41,7 +41,7 @@ if device.type == 'cuda':
         _ = model(torch.randn(1, 3, 224, 224).to(device))
 
 # Benchmarking loop
-num_iterations = 100
+num_iterations = 1000
 total_time = 0
 correct = 0
 total = 0

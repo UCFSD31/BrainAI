@@ -2,10 +2,13 @@ import torch
 from transformers import BertTokenizer, BertForQuestionAnswering
 import time
 import psutil
+import sys
+
+
 
 # Function to select device
 def select_device():
-    device_type = input("Select device (CPU/GPU): ").lower()
+    device_type = sys.argv[1]
     if device_type == 'gpu' and torch.cuda.is_available():
         return torch.device('cuda')
     else:
