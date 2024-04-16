@@ -14,9 +14,9 @@
 // Recommended pins include 2,4,12-19,21-23,25-27,32-33
 // for the ESP32-C3 the GPIO pins are 1-10,18-21
 
-#define SERVO_1_PIN 22
-#define SERVO_2_PIN 19
-#define SERVO_3_PIN 18
+#define SERVO_1_PIN 18
+#define SERVO_2_PIN 22
+#define SERVO_3_PIN 19
 #define SERVO_4_PIN 2
 
 // functions declartions 
@@ -70,7 +70,7 @@ void loop()
     { 
       if(bitRead(servoBits[i], MSB) == 0)
       {
-        if(index == 0)
+        if(index == 1)
         {
           target[index++] = (servoBits[i] & MASK) + OFFSET;
           target[index++] = FLIP - ((servoBits[i] & MASK) + OFFSET);
@@ -81,7 +81,7 @@ void loop()
       }
       else if (bitRead(servoBits[i], MSB) == 1)
       {
-        if(index == 0)
+        if(index == 1)
         {
           target[index++] = (((servoBits[i] & MASK) * -1) + OFFSET);
           target[index++] = FLIP - (((servoBits[i] & MASK) * -1) + OFFSET);
@@ -96,8 +96,8 @@ void loop()
 
     while(!checkAllEqual())
     {
-      if (Serial.available())
-        break;
+      // if (Serial.available())
+      //   break;
 
       int max = getMaxDistance();
 
@@ -143,7 +143,6 @@ void moveInc()
       
       for(int i = 0; i < NUMSERVOS; i++)
       {
-        
         servos[i].write(target[i]);
         //delayMicroseconds(1000);
       }
@@ -160,16 +159,23 @@ void returnAngles()
 { 
   for(int i = 0; i < NUMSERVOS; i++)
   {
-    if(i == 1)
+    if(i == 2)
       continue;
 
-    Serial.print(servos[i].read(),HEX);
+    Serial.println(servos[i].read());
   }
 }
 void targetCheck()
 {
+  if(target[1] >= 125 || target[2] <= 55)
+  {
+    target[1] = 125;
+    target[2] = 55;
+  }
+
   for(int i = 0; i < NUMSERVOS; i++)
   {
+
     if (target[i] > 180)
       target[i] = 180;
     else if(target[i] < 0)
